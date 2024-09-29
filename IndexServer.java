@@ -2,25 +2,16 @@ import java.io.*;
 import java.net.*;
 import java.util.HashMap;
 import java.util.Map;
-import java.util.concurrent.ExecutorService;
-import java.util.concurrent.Executors;
 
 public class IndexServer {
     private static final int INDEX_SERVER_PORT = 10655; // Base port number
-    private static volatile int clientCounter = 0; // Counter to keep track of the number of clients
+    private static int clientCounter = 0; // Counter to keep track of the number of clients
     private final Map<String, String> userDatabase = new HashMap<>(); // Example user database
     private final Map<String, String> contentDatabase = new HashMap<>(); // Example content database
-    private final ExecutorService threadPool = Executors.newFixedThreadPool(10); // Thread pool with 10 threads
 
     public IndexServer() {
-        // Add some example users
-        userDatabase.put("anna", "a86H6T0c");
-        userDatabase.put("barbara", "G6M7p8az");
-        userDatabase.put("bathie", "Pd82bG57");
-        userDatabase.put("kdohas", "jO79bNs1");
-        userDatabase.put("eli", "uCh781fY");
-        userDatabase.put("tarah", "Cfw61RqV");
-        userDatabase.put("tiff", "Kuz07YLv");
+        // Load users from file
+        loadUsersFromFile();
 
         // Add some example content
         contentDatabase.put("Aladdin", "192.55.32.214:15250");
@@ -35,7 +26,7 @@ public class IndexServer {
             System.out.println("Index Server is running...");
             while (true) {
                 Socket clientSocket = serverSocket.accept();
-                threadPool.execute(new IndexRequestHandler(clientSocket));
+                new Thread(new IndexRequestHandler(clientSocket)).start();
             }
         } catch (IOException e) {
             e.printStackTrace();
@@ -54,38 +45,81 @@ public class IndexServer {
             try (BufferedReader in = new BufferedReader(new InputStreamReader(socket.getInputStream()));
                     PrintWriter out = new PrintWriter(socket.getOutputStream(), true)) {
 
-                String email = in.readLine();
-                String password = in.readLine();
-
-                if (authenticate(email, password)) {
-                    int assignedPort;
-                    synchronized (IndexServer.class) {
-                        assignedPort = INDEX_SERVER_PORT + 1 + clientCounter; // Calculate the port number
-                        clientCounter++; // Increment the counter for the next client
-                    }
-
-                    // Send back the assigned port for the peer
-                    out.println(assignedPort);
-
-                    // Handle content search requests
-                    String contentRequest;
-                    while ((contentRequest = in.readLine()) != null) {
-                        if (contentDatabase.containsKey(contentRequest)) {
-                            out.println(contentDatabase.get(contentRequest));
-                        } else {
-                            out.println("CONTENT_NOT_FOUND");
-                        }
-                    }
-                } else {
-                    out.println("AUTH_FAILED");
+                String command = in.readLine();
+                if (command.equals("REGISTER")) {
+                    registerUser(in, out);
+                } else if (command.equals("LOGIN")) {
+                    loginUser(in, out);
+                } else if (command.startsWith("SEARCH")) {
+                    searchContent(command, out);
                 }
             } catch (IOException e) {
                 e.printStackTrace();
             }
         }
 
-        private boolean authenticate(String email, String password) {
-            return password.equals(userDatabase.get(email));
+        private void registerUser(BufferedReader in, PrintWriter out) throws IOException {
+            String name = in.readLine();
+            String phone = in.readLine();
+            String email = in.readLine();
+            String username = in.readLine();
+            String password = in.readLine();
+
+            if (!userDatabase.containsKey(username)) {
+                userDatabase.put(username, password);
+                saveUserToFile(name, phone, email, username, password);
+                out.println("REGISTER_SUCCESS");
+            } else {
+                out.println("REGISTER_FAILURE");
+            }
+        }
+
+        private void loginUser(BufferedReader in, PrintWriter out) throws IOException {
+            String username = in.readLine();
+            String password = in.readLine();
+
+            if (password.equals(userDatabase.get(username))) {
+                int assignedPort = INDEX_SERVER_PORT + 1 + clientCounter; // Calculate the port number
+                clientCounter++; // Increment the counter for the next client
+                out.println("AUTH_SUCCESS");
+                out.println(assignedPort);
+            } else {
+                out.println("AUTH_FAILURE");
+            }
+        }
+
+        private void searchContent(String command, PrintWriter out) {
+            String contentName = command.split(" ")[1];
+            if (contentDatabase.containsKey(contentName)) {
+                out.println("FOUND " + contentDatabase.get(contentName));
+            } else {
+                out.println("NOT_FOUND");
+            }
+        }
+
+        private void saveUserToFile(String name, String phone, String email, String username, String password) {
+            try (BufferedWriter writer = new BufferedWriter(new FileWriter("userList.txt", true))) {
+                writer.write(name + "," + phone + "," + email + "," + username + "," + password);
+                writer.newLine();
+            } catch (IOException e) {
+                e.printStackTrace();
+            }
+        }
+    }
+
+    private void loadUsersFromFile() {
+        try (BufferedReader reader = new BufferedReader(new FileReader("userList.txt"))) {
+            String line;
+            while ((line = reader.readLine()) != null) {
+                String[] parts = line.split(",");
+                if (parts.length == 5) {
+                    String username = parts[3];
+                    String password = parts[4];
+                    userDatabase.put(username, password);
+                }
+            }
+        } catch (IOException e) {
+            e.printStackTrace();
         }
     }
 

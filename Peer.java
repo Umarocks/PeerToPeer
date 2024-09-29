@@ -1,36 +1,28 @@
 import java.io.*;
 import java.net.*;
 
+// 10.0.0.239
 public class Peer {
     private static final int INDEX_SERVER_PORT = 10655; // Base port number from IndexServer
 
     public static void main(String[] args) {
         try {
-            // Connect to the IndexServer
             BufferedReader userInput = new BufferedReader(new InputStreamReader(System.in));
-            System.out.println("Enter IndexServer IP:");
-            String indexServerIP = userInput.readLine();
-            System.out.println("Enter IndexServer Port:");
-            int indexServerPort = Integer.parseInt(userInput.readLine());
+            String indexServerIP = getIndexServerIP(userInput);
+            int indexServerPort = getIndexServerPort(userInput);
 
+            // Connect to the IndexServer
             Socket socket = new Socket(indexServerIP, indexServerPort);
             PrintWriter out = new PrintWriter(socket.getOutputStream(), true);
             BufferedReader in = new BufferedReader(new InputStreamReader(socket.getInputStream()));
 
-            // Authentication with the IndexServer
-            System.out.println("Enter email:");
-            String email = userInput.readLine();
-            System.out.println("Enter password:");
-            String password = userInput.readLine();
-            out.println(email); // Send email
-            out.println(password); // Send password
+            authenticateUser(userInput, out, in);
 
-            // Read the authentication response from the server
-            String authResponse = in.readLine();
-            if (authResponse.equals("AUTH_FAILED")) {
+            String response = in.readLine();
+            if (response.equals("FAILURE")) {
                 System.out.println("Authentication failed.");
             } else {
-                int assignedPort = Integer.parseInt(authResponse);
+                int assignedPort = Integer.parseInt(in.readLine());
                 System.out.println("Assigned port: " + assignedPort);
 
                 // Start a server socket on the assigned port
@@ -41,21 +33,17 @@ public class Peer {
                     System.out.println("Enter content name to search or 'exit' to quit:");
                     String contentName = userInput.readLine();
                     if (contentName.equalsIgnoreCase("exit")) {
-                        out.println("exit");
-                        System.out.println("Exiting...");
-                        socket.close();
                         break;
                     }
-                    out.println(contentName);
+                    out.println("SEARCH " + contentName);
                     String contentResponse = in.readLine();
-                    if (contentResponse.equals("CONTENT_NOT_FOUND")) {
+                    if (contentResponse.equals("NOT_FOUND")) {
                         System.out.println("Content not found.");
                     } else {
-                        System.out.println("Content found at: " + contentResponse);
-                        downloadContent(contentResponse, contentName);
+                        System.out.println("Content found at: " + contentResponse.split(" ")[1]);
+                        downloadContent(contentResponse.split(" ")[1], contentName);
                     }
                 }
-
             }
 
             // Close the connection
@@ -65,6 +53,75 @@ public class Peer {
         } finally {
             System.exit(0);
         }
+    }
+
+    private static String getIndexServerIP(BufferedReader userInput) throws IOException {
+        System.out.println("Enter IndexServer IP:");
+        return userInput.readLine();
+    }
+
+    private static int getIndexServerPort(BufferedReader userInput) throws IOException {
+        System.out.println("Enter IndexServer Port:");
+        return Integer.parseInt(userInput.readLine());
+    }
+
+    private static void authenticateUser(BufferedReader userInput, PrintWriter out, BufferedReader in)
+            throws IOException {
+        while (true) {
+            System.out.println("Choose an option: 1. Login 2. Register");
+            String option = userInput.readLine();
+
+            if (option.equals("1")) {
+                loginUser(userInput, out, in);
+                String response = in.readLine();
+                if ("AUTH_SUCCESS".equals(response)) {
+                    System.out.println("Login successful.");
+                    break;
+                } else {
+                    System.out.println("Login failed.");
+                }
+            } else if (option.equals("2")) {
+                registerUser(userInput, out, in);
+                String response = in.readLine();
+                if ("REGISTER_SUCCESS".equals(response)) {
+                    System.out.println("Registration successful.");
+                } else {
+                    System.out.println("Registration failed.");
+                }
+            } else {
+                System.out.println("Invalid option. Exiting...");
+                System.exit(0);
+            }
+        }
+    }
+
+    private static void loginUser(BufferedReader userInput, PrintWriter out, BufferedReader in) throws IOException {
+        System.out.println("Enter email:");
+        String email = userInput.readLine();
+        System.out.println("Enter password:");
+        String password = userInput.readLine();
+        out.println("LOGIN");
+        out.println(email);
+        out.println(password);
+    }
+
+    private static void registerUser(BufferedReader userInput, PrintWriter out, BufferedReader in) throws IOException {
+        System.out.println("Enter name:");
+        String name = userInput.readLine();
+        System.out.println("Enter phone:");
+        String phone = userInput.readLine();
+        System.out.println("Enter email:");
+        String email = userInput.readLine();
+        System.out.println("Enter username:");
+        String username = userInput.readLine();
+        System.out.println("Enter password:");
+        String password = userInput.readLine();
+        out.println("REGISTER");
+        out.println(name);
+        out.println(phone);
+        out.println(email);
+        out.println(username);
+        out.println(password);
     }
 
     private static void startPeerServer(int port) {
