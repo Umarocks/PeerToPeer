@@ -16,9 +16,8 @@ public class Peer {
             PrintWriter out = new PrintWriter(socket.getOutputStream(), true);
             BufferedReader in = new BufferedReader(new InputStreamReader(socket.getInputStream()));
 
-            authenticateUser(userInput, out, in);
+            String response = authenticateUser(userInput, out, in);
 
-            String response = in.readLine();
             if (response.equals("FAILURE")) {
                 System.out.println("Authentication failed.");
             } else {
@@ -50,9 +49,8 @@ public class Peer {
             socket.close();
         } catch (IOException e) {
             e.printStackTrace();
-        } finally {
-            System.exit(0);
         }
+        return;
     }
 
     private static String getIndexServerIP(BufferedReader userInput) throws IOException {
@@ -65,7 +63,7 @@ public class Peer {
         return Integer.parseInt(userInput.readLine());
     }
 
-    private static void authenticateUser(BufferedReader userInput, PrintWriter out, BufferedReader in)
+    private static String authenticateUser(BufferedReader userInput, PrintWriter out, BufferedReader in)
             throws IOException {
         while (true) {
             System.out.println("Choose an option: 1. Login 2. Register");
@@ -76,17 +74,20 @@ public class Peer {
                 String response = in.readLine();
                 if ("AUTH_SUCCESS".equals(response)) {
                     System.out.println("Login successful.");
-                    break;
+                    return "SUCCESS";
                 } else {
                     System.out.println("Login failed.");
+                    return "FAILURE";
                 }
             } else if (option.equals("2")) {
                 registerUser(userInput, out, in);
                 String response = in.readLine();
                 if ("REGISTER_SUCCESS".equals(response)) {
                     System.out.println("Registration successful.");
+                    return "REG_SUCCESS";
                 } else {
                     System.out.println("Registration failed.");
+                    return "REG_FAILURE";
                 }
             } else {
                 System.out.println("Invalid option. Exiting...");
