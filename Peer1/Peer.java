@@ -1,7 +1,13 @@
-import java.io.*;
-import java.net.*;
 
+import java.io.*;
+import java.net.InetAddress;
+import java.net.Socket;
+import java.util.HashMap;
+import java.util.Map;
+import java.net.ServerSocket;
 // 10.0.0.239
+
+// 10.91.80.240
 public class Peer {
     private static final int INDEX_SERVER_PORT = 10655; // Base port number from IndexServer
 
@@ -27,7 +33,11 @@ public class Peer {
                 // Start a server socket on the assigned port
                 new Thread(() -> startPeerServer(assignedPort)).start();
 
-                // Handle content search and download
+                loadFiles(socket, assignedPort, out);
+                String loadResponse = in.readLine();
+                if (!"FILES_ADDED".equals(loadResponse)) {
+                    throw new IOException("Failed to load files on the server.");
+                } // Handle content search and download
                 while (true) {
                     System.out.println("Enter content name to search or 'exit' to quit:");
                     String contentName = userInput.readLine();
@@ -43,7 +53,8 @@ public class Peer {
                         System.out.println("Content not found.");
                     } else {
                         System.out.println("Content found at: " + contentResponse.split(" ")[1]);
-                        downloadContent(contentResponse.split(" ")[1], contentName);
+                        // .split(" ")[1]
+                        // downloadContent(contentResponse.split(" ")[1], contentName);
                     }
                 }
             }
@@ -52,8 +63,8 @@ public class Peer {
             socket.close();
         } catch (IOException e) {
             e.printStackTrace();
-            System.exit(0);
         }
+        System.exit(0);
         return;
     }
 
@@ -139,6 +150,41 @@ public class Peer {
         } catch (IOException e) {
             e.printStackTrace();
         }
+    }
+
+    private static void loadFiles(Socket socket, int assignedPort, PrintWriter out) throws IOException {
+
+        try {
+            File contentFolder = new File("ContentFile");
+            HashMap<String, String> fileMap = new HashMap<>();
+            if (contentFolder.exists() && contentFolder.isDirectory()) {
+                for (File file : contentFolder.listFiles()) {
+                    if (file.isFile()) {
+                        fileMap.put(
+                                InetAddress.getLocalHost().getHostAddress() + ":" + assignedPort, file.getName());
+                    }
+                }
+            }
+            // Print the entire fileMap
+            System.out.println("Files available for sharing:");
+            for (String fileName : fileMap.keySet()) {
+                System.out.println(fileName + " -> " + fileMap.get(fileName));
+            }
+
+            // Convert the map to a CSV string
+            StringBuilder csvBuilder = new StringBuilder();
+            for (Map.Entry<String, String> entry : fileMap.entrySet()) {
+                csvBuilder.append(entry.getKey()).append(",").append(entry.getValue()).append("\n");
+            }
+            String csv = csvBuilder.toString();
+
+            // Send the CSV string
+            out.println("LOADFILE");
+            out.println(csv);
+        } catch (IOException e) {
+            e.printStackTrace();
+        }
+
     }
 
     private static class FileRequestHandler implements Runnable {
