@@ -32,9 +32,12 @@ public class Peer {
                     System.out.println("Enter content name to search or 'exit' to quit:");
                     String contentName = userInput.readLine();
                     if (contentName.equalsIgnoreCase("exit")) {
+                        System.out.println("Exiting...");
                         break;
                     }
-                    out.println("SEARCH " + contentName);
+                    System.out.println("SEARCH " + contentName);
+                    String searchQuery = "SEARCH " + contentName;
+                    out.println(searchQuery);
                     String contentResponse = in.readLine();
                     if (contentResponse.equals("NOT_FOUND")) {
                         System.out.println("Content not found.");
@@ -49,6 +52,7 @@ public class Peer {
             socket.close();
         } catch (IOException e) {
             e.printStackTrace();
+            System.exit(0);
         }
         return;
     }
@@ -84,10 +88,10 @@ public class Peer {
                 String response = in.readLine();
                 if ("REGISTER_SUCCESS".equals(response)) {
                     System.out.println("Registration successful.");
-                    return "REG_SUCCESS";
+                    return "SUCCESS";
                 } else {
                     System.out.println("Registration failed.");
-                    return "REG_FAILURE";
+                    return "FAILURE";
                 }
             } else {
                 System.out.println("Invalid option. Exiting...");

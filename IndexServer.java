@@ -44,15 +44,20 @@ public class IndexServer {
         public void run() {
             try (BufferedReader in = new BufferedReader(new InputStreamReader(socket.getInputStream()));
                     PrintWriter out = new PrintWriter(socket.getOutputStream(), true)) {
-
-                String command = in.readLine();
-                if (command.equals("REGISTER")) {
-                    registerUser(in, out);
-                } else if (command.equals("LOGIN")) {
-                    loginUser(in, out);
-                } else if (command.startsWith("SEARCH")) {
-                    searchContent(command, out);
+                while (true) {
+                    String command = in.readLine();
+                    if (command.equals("REGISTER")) {
+                        System.out.println("Register request received from " + socket.getInetAddress());
+                        registerUser(in, out);
+                    } else if (command.equals("LOGIN")) {
+                        System.out.println("Login request received from " + socket.getInetAddress());
+                        loginUser(in, out);
+                    } else if (command.startsWith("SEARCH")) {
+                        System.out.println("Search request received from " + socket.getInetAddress());
+                        searchContent(command, out);
+                    }
                 }
+
             } catch (IOException e) {
                 e.printStackTrace();
             }
@@ -90,6 +95,7 @@ public class IndexServer {
 
         private void searchContent(String command, PrintWriter out) {
             String contentName = command.split(" ")[1];
+            System.out.println("Searching for content: " + contentName);
             if (contentDatabase.containsKey(contentName)) {
                 out.println("FOUND " + contentDatabase.get(contentName));
             } else {
