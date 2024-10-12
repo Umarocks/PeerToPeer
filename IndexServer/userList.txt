@@ -1,3 +1,8 @@
 umar,1234,umar,umar,aziz
 yusuf,3425,yusuf,yusuf,baig
 eyad,123,eyad,eeyad,baig
+
+habibi,9999,habibi@gmail.com,habibi,habibi007
+halen,9876,halen@hotmail.com,halen1,halen@123
+zainab,9987,zainab@gmail.com,zainab,zainab@123
+anna,0589,anna@gmail.com,anna,anna@123

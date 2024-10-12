@@ -5,13 +5,13 @@ import java.util.HashMap;
 import java.util.Map;
 
 // 10.91.80.240
-public class IndexServer {
+public class azizP1IndexServer {
     private static final int INDEX_SERVER_PORT = 10655; // Base port number
     private static int clientCounter = 0; // Counter to keep track of the number of clients
     private final Map<String, String> userDatabase = new HashMap<>(); // Example user database
     private final Map<String, String> contentDatabase = new HashMap<>(); // Example content database
 
-    public IndexServer() {
+    public azizP1IndexServer() {
         // Load users from file
         loadUsersFromFile();
 
@@ -207,8 +207,8 @@ public class IndexServer {
             System.out.println("Received map: " + fileNameMap);
             // Add the received map to the content database
             contentDatabase.putAll(fileNameMap);
-            // Append the received map to the fileList.txt
-            try (BufferedWriter writer = new BufferedWriter(new FileWriter("fileList.txt", true))) {
+            // Append the received map to the contentList.txt
+            try (BufferedWriter writer = new BufferedWriter(new FileWriter("contentList.txt", true))) {
                 for (Map.Entry<String, String> entry : fileNameMap.entrySet()) {
                     System.out.println("Writing to file: " + entry.getKey() + " " + entry.getValue());
                     writer.write(entry.getKey() + "," + entry.getValue());
@@ -219,7 +219,7 @@ public class IndexServer {
                 writer.close();
                 out.println("FILES_ADDED");
             } catch (IOException e) {
-                System.out.println("Error writing to fileList.txt");
+                System.out.println("Error writing to contentList.txt");
                 e.printStackTrace();
             }
             System.out.println("Files added to the index server");
@@ -231,7 +231,7 @@ public class IndexServer {
     }
 
     public static void main(String[] args) {
-        IndexServer server = new IndexServer();
+        azizP1IndexServer server = new azizP1IndexServer();
         server.start();
     }
 }
